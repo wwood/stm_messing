@@ -34,14 +34,9 @@ inline uint16_t nucleotide_sequence_to_index(char* kmer, int length){
       case 't':
         to_return += 3 << positions_to_move;
         break;
-      default:
-        fprintf(stderr, "Detected unexcepted nucleotide: %c\n", kmer[i]);
-        exit(1);
+
+        //TODO: this effectively defaults to A, but meh for the moment
     }
-  }
-  if (to_return >= 1<<16){
-    printf("Found kmer that was too big for the table! Fail.\n");
-    exit(1);
   }
 
   return to_return;
@@ -55,10 +50,6 @@ typedef struct seqtab {
 
 void* process_sequence(void* arg){
   seq_and_table* seq_table = (seq_and_table*) arg;
-  if (seq_table->s < (char*)100){
-    printf("Found abberant char*, failure imminent\n");
-    exit(1);
-  }
   int position = 0;
   for (position = 0; seq_table->l-position >= 8; position++){
     //find index converting nucleotide string to bit array
@@ -96,9 +87,6 @@ int main(int argc, char *argv[]){
 
   //calloc sufficient space for the kmer counts
   uint16_t* kmer_table = (uint16_t*) calloc(1<<16, sizeof(uint16_t));
-  printf("biggest=%i\n", nucleotide_sequence_to_index("TTTTTTTT",8));
-  printf("smallest=%i\n", nucleotide_sequence_to_index("AAAAAAAA",8));
-  printf("middle=%i\n", nucleotide_sequence_to_index("AAAAAATA",8));
 
   //open input file
   //setup kseq reading
@@ -118,7 +106,6 @@ int main(int argc, char *argv[]){
 
   pthread_t* threads = malloc(num_threads*sizeof(pthread_t));
   seq_and_table* passing_structs = calloc(num_threads, sizeof(seq_and_table));
-  //int pthread_create(pthread_t * pth, pthread_attr_t *att, void * (*function), void * arg);
 
   //foreach sequence
   int thread_number = 0;
