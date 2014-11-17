@@ -51,13 +51,15 @@ typedef struct seqtab {
 void* process_sequence(void* arg){
   seq_and_table* seq_table = (seq_and_table*) arg;
   int position = 0;
+  uint16_t* position_to_increment;
   for (position = 0; seq_table->l-position >= 8; position++){
     //find index converting nucleotide string to bit array
     uint16_t index = nucleotide_sequence_to_index(seq_table->s+position, 8);
+    position_to_increment = &(seq_table->kmer_table[index]);
 
     //stm_transact array lookup and increment
     __transaction_atomic {
-      seq_table->kmer_table[index] += 1;
+      *position_to_increment += 1;
     }
   }
   return NULL;
