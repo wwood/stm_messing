@@ -10,7 +10,6 @@
 //init kseq.h
 KSEQ_INIT(gzFile, gzread);
 
-
 // Take a string of nucleotides, and return an index into the kmer_table
 inline uint16_t nucleotide_sequence_to_index(char* kmer, int length){
   uint16_t to_return = 0;
@@ -70,11 +69,31 @@ void* process_sequence(void* arg){
       seq_table->kmer_table[index] += 1;
     }
   }
-  //sleep(1);
   return NULL;
 }
 
 int main(int argc, char *argv[]){
+  char c;
+  int num_threads = 1;
+
+  while ((c = getopt (argc, argv, "ht:")) != -1){
+    switch (c){
+      exit(0);
+      case 'h':
+        printf("\n  Usage: %s [-t <num_threads>] <seq_file>\n\n",argv[0]);
+        printf("  Count kmers, output some of them. The <seq_file> can be a FASTA or FASTQ file, gzipped or uncompressed.\n\n");
+        printf("  Options:\n");
+        printf("   -t THREADS  number of threads to use [default: %i]\n", num_threads);
+        printf("   -h          show this help\n");
+        printf("\n");
+        exit(0);
+      case 't':
+        num_threads = atoi(optarg);
+        break;
+    }
+  }
+  printf("Using %i threads\n", num_threads);
+
   //calloc sufficient space for the kmer counts
   uint16_t* kmer_table = (uint16_t*) calloc(1<<16, sizeof(uint16_t));
   printf("biggest=%i\n", nucleotide_sequence_to_index("TTTTTTTT",8));
@@ -84,10 +103,12 @@ int main(int argc, char *argv[]){
   //open input file
   //setup kseq reading
   gzFile fp;
-  char* path = argv[1];
+  char* path = argv[optind];
   if (path == NULL){
+    printf("Reading from stdin\n");
     fp = gzopen("/dev/stdin","r");
   } else {
+    printf("Reading from %s\n", path);
     fp = gzopen(path, "r");
   }
 
@@ -95,7 +116,6 @@ int main(int argc, char *argv[]){
   int l;
   seq = kseq_init(fp);
 
-  int num_threads = 4;
   pthread_t* threads = malloc(num_threads*sizeof(pthread_t));
   seq_and_table* passing_structs = calloc(num_threads, sizeof(seq_and_table));
   //int pthread_create(pthread_t * pth, pthread_attr_t *att, void * (*function), void * arg);
@@ -105,19 +125,15 @@ int main(int argc, char *argv[]){
   int sequence_number = 0;
   int pthread_return;
   seq_and_table* st;
-  printf("Starting foreach\n");
   while ((l = kseq_read(seq)) >= 0) {
     pthread_return = pthread_join(threads[thread_number], NULL);
-    //printf("Finished thread #%d\n", thread_number);
-    //printf("Found pthread_return %i\n",pthread_return);
     if (sequence_number > thread_number && pthread_return != 0){
       printf("pthread_create returned with strange status %d, exiting", pthread_return);
       exit(1);
     }
-    //while there is another kmer in the read
+
     st = passing_structs+thread_number;
     if (sequence_number <= thread_number){
-      printf("Initialising new struct\n");
       st->kmer_table = kmer_table;
       st->s = (char *) malloc(seq->seq.l*sizeof(char));
       strncpy(st->s, seq->seq.s, seq->seq.l);
@@ -133,8 +149,6 @@ int main(int argc, char *argv[]){
       printf("Unexpected pthread_create: %i\n",pthread_return);
       exit(1);
     }
-
-    //process_sequence(&st);
 
     sequence_number += 1;
     thread_number += 1;

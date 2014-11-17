@@ -1,2 +1,2 @@
 all:
-	gcc -g -Wall main_parallel.c ext/threadpool.c -Iext -o stm_parallel -fgnu-tm -lz -lpthread
+	gcc -g -Wall -O2 8mer_count.c -Iext -o 8mer_count -fgnu-tm -lz -lpthread
