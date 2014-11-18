@@ -34,3 +34,16 @@ sys    1m4.976s
 
 So it seems that parallelisation with STM is actually slowing things down, not speeding them up, at least in this (quite bad) implementation of kmer counting.
 
+Two threads is even worse
+```
+$ time ./8mer_count -t2 /tmp/ben_fasta/62_palsa20140929.3kb.fa
+Using 2 threads
+Reading from /tmp/ben_fasta/62_palsa20140929.3kb.fa
+Found AAAA AAAA 44507 times
+Found AAAA AAAC 33356 times
+Found AAAA AAAG 52578 times
+
+real	46m15.390s
+user	53m31.304s
+sys	14m30.592s
+```
